@@ -94,7 +94,7 @@ def post_to_reddit(submission, mp4_link):
                 logging.error("Skipping to next link.")
                 return False
             except praw.errors.APIException as e:
-                if e.error_type is 'DELETED_LINK':
+                if e.error_type == 'DELETED_LINK':
                     logging.error("ERROR: Submission was deleted.")
                     return True
                 else:
