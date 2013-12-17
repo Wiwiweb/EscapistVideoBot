@@ -46,6 +46,10 @@ else:
     root_logger.setLevel(logging.DEBUG)
     root_logger.addHandler(timed_handler)
 
+# Silence python requests
+requests_log = logging.getLogger('requests')
+requests_log.setLevel(logging.ERROR)
+
 
 def is_new_submission(submission):
     """Check the history file to see if the submission is new."""
