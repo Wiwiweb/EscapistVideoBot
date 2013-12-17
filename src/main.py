@@ -100,27 +100,40 @@ if __name__ == '__main__':
     r = praw.Reddit(user_agent=USER_AGENT)
     r.login(config['Reddit']['username'], config['Passwords']['reddit'])
 
+    retries = 5
+
     while True:
-        latest_submissions = r.get_domain_listing(
-            ESCAPIST_DOMAIN, sort='new',
-            limit=int(config['Main']['post_limit_per_run']))
+        try:
+            latest_submissions = r.get_domain_listing(
+                ESCAPIST_DOMAIN, sort='new',
+                limit=int(config['Main']['post_limit_per_run']))
 
-        for submission in latest_submissions:
-            logging.debug('{}: {}'.format(submission.id, submission))
+            for submission in latest_submissions:
+                logging.debug('{}: {}'.format(submission.id, submission))
 
-            if is_new_submission(submission):
-                logging.info("Found new submission: {} - {}".format(
-                    submission.short_link, submission))
-                logging.info("url: " + submission.url)
-                mp4_link = get_mp4_link(submission.url)
+                if is_new_submission(submission):
+                    logging.info("Found new submission: {} - {}".format(
+                        submission.short_link, submission))
+                    logging.info("url: " + submission.url)
+                    mp4_link = get_mp4_link(submission.url)
 
-                if mp4_link:
-                    logging.info("mp4 link: " + str(mp4_link))
-                    post_to_reddit(submission, mp4_link)
-                    logging.info("Comment posted.")
-                else:
-                    logging.info("No video in this link")
-                add_to_history(submission)
-                logging.info("Submission remembered.")
+                    if mp4_link:
+                        logging.info("mp4 link: " + str(mp4_link))
+                        post_to_reddit(submission, mp4_link)
+                        logging.info("Comment posted.")
+                    else:
+                        logging.info("No video in this link")
+                    add_to_history(submission)
+                    logging.info("Submission remembered.")
+
+            retries = 5
+        except praw.errors.RateLimitExceeded as e:
+            logging.exception("ERROR: RateLimitExceeded: " + str(e))
+            logging.error("Waiting another cycle.")
+        except Exception as e:
+            logging.exception("ERROR: Unknown error: " + str(e))
+            retries -= 1
+            logging.error(
+                "Waiting another cycle. {} more tries".format(retries))
 
         sleep(int(config['Main']['frequency']))
