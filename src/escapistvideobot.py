@@ -83,12 +83,25 @@ def get_mp4_link(url):
 
 
 def post_to_reddit(submission, mp4_link):
-    """Post the link to the reddit thread."""
+    """Post the link to the reddit thread. Return True if succeeded."""
     comment = "[Direct mp4 link]({})".format(mp4_link)
     if not debug:
-        submission.add_comment(comment)
+            try:
+                submission.add_comment(comment)
+                return True
+            except praw.errors.RateLimitExceeded as e:
+                logging.error("ERROR: RateLimitExceeded: " + str(e))
+                logging.error("Skipping to next link.")
+                return False
+            except praw.errors.APIException as e:
+                if e.error_type is 'DELETED_LINK':
+                    logging.error("ERROR: Submission was deleted.")
+                    return True
+                else:
+                    raise e
     else:
         logging.debug("Comment that would have been posted: " + comment)
+        return True
 
 
 def add_to_history(submission):
@@ -126,17 +139,17 @@ if __name__ == '__main__':
 
                         if mp4_link:
                             logging.info("mp4 link: " + str(mp4_link))
-                            post_to_reddit(submission, mp4_link)
+                            success = post_to_reddit(submission, mp4_link)
                             logging.info("Comment posted.")
                         else:
                             logging.info("No video in this link")
-                        add_to_history(submission)
-                        logging.info("Submission remembered.")
+                            success = True
+
+                        if success:
+                            add_to_history(submission)
+                            logging.info("Submission remembered.")
 
                 retries = 5
-            except praw.errors.RateLimitExceeded as e:
-                logging.error("ERROR: RateLimitExceeded: " + str(e))
-                logging.error("Waiting another cycle.")
             except Exception as e:
                 logging.exception("ERROR: Unknown error: " + str(e))
                 retries -= 1
