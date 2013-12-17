@@ -9,6 +9,7 @@ Author: Wiwiweb
 from configparser import ConfigParser
 import json
 import logging
+from logging.handlers import TimedRotatingFileHandler
 import re
 import sys
 from time import sleep
@@ -28,8 +29,22 @@ USER_AGENT = "SakuraiBot v" + VERSION + " by /u/Wiwiweb"
 
 ESCAPIST_DOMAIN = "escapistmagazine.com"
 
-logging.basicConfig(stream=sys.stdout, level=logging.DEBUG,
-                    format='%(asctime)s: %(message)s')
+if len(sys.argv) > 1 and '--debug' in sys.argv:
+    debug = True
+else:
+    debug = False
+
+if debug:
+    logging.basicConfig(stream=sys.stdout, level=logging.DEBUG,
+                        format='%(asctime)s: %(message)s')
+else:
+    root_logger = logging.getLogger()
+    timed_handler = TimedRotatingFileHandler(config['Files']['logfile'],
+                                             'midnight')
+    timed_handler.setFormatter(logging.Formatter('%(asctime)s: %(message)s'))
+    timed_handler.setLevel(logging.INFO)
+    root_logger.setLevel(logging.DEBUG)
+    root_logger.addHandler(timed_handler)
 
 
 def is_new_submission(submission):
@@ -66,7 +81,10 @@ def get_mp4_link(url):
 def post_to_reddit(submission, mp4_link):
     """Post the link to the reddit thread."""
     comment = "[Direct mp4 link]({})".format(mp4_link)
-    submission.add_comment(comment)
+    if not debug:
+        submission.add_comment(comment)
+    else:
+        logging.debug("Comment going to be posted: " + comment)
 
 
 def add_to_history(submission):
