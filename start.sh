@@ -17,7 +17,7 @@ cd src
 nohup python3 escapistvideobot.py >../nohup.out 2>&1 &
 disown
 sleep 1
-export PID=`ps aux | grep '__init__.py' | grep -v grep | awk '{print($2)}'`
+export PID=`ps aux | grep 'escapistvideobot.py' | grep -v grep | awk '{print($2)}'`
 if [ -n "$PID" ]; then
   echo "Running correctly."
 else
