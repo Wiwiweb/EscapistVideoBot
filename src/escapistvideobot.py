@@ -84,7 +84,7 @@ def post_to_reddit(submission, mp4_link):
     if not debug:
         submission.add_comment(comment)
     else:
-        logging.debug("Comment going to be posted: " + comment)
+        logging.debug("Comment that would have been posted: " + comment)
 
 
 def add_to_history(submission):
@@ -92,7 +92,8 @@ def add_to_history(submission):
     history = open(config['Files']['history'], 'r+')
     old = history.read()
     history.seek(0)
-    history.write(submission.id + '\n' + old)
+    if not debug:
+        history.write(submission.id + '\n' + old)
     history.close()
 
 
