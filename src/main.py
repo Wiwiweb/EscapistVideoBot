@@ -31,8 +31,6 @@ ESCAPIST_DOMAIN = "escapistmagazine.com"
 logging.basicConfig(stream=sys.stdout, level=logging.DEBUG,
                     format='%(asctime)s: %(message)s')
 
-r = praw.Reddit(user_agent=USER_AGENT)
-
 
 def is_new_submission(submission):
     """Check the history file to see if the submission is new."""
@@ -55,7 +53,7 @@ def get_mp4_link(url):
     soup_link = soup.find('link', rel='video_src')
     if soup_link:
         soup_href = urllib.parse.unquote(soup_link.get('href'))
-        js_url = re.search(r'config=(http:\/\/.+?\.js)', soup_href).group(1)
+        js_url = re.search(r'config=(http://.+?\.js)', soup_href).group(1)
         req = requests.get(js_url)
         # Single quote is not valid JSON
         js_text = req.text.replace('\'', '"')
@@ -67,7 +65,8 @@ def get_mp4_link(url):
 
 def post_to_reddit(submission, mp4_link):
     """Post the link to the reddit thread."""
-    pass
+    comment = "[Direct mp4 link]({})".format(mp4_link)
+    submission.add_comment(comment)
 
 
 def add_to_history(submission):
@@ -78,7 +77,11 @@ def add_to_history(submission):
     history.write(submission.id + '\n' + old)
     history.close()
 
+
 if __name__ == '__main__':
+    r = praw.Reddit(user_agent=USER_AGENT)
+    r.login(config['Reddit']['username'], config['Passwords']['reddit'])
+
     while True:
         latest_submissions = r.get_domain_listing(
             ESCAPIST_DOMAIN, sort='new',
@@ -102,5 +105,4 @@ if __name__ == '__main__':
                 add_to_history(submission)
                 logging.info("Submission remembered.")
 
-        # sleep(int(config['Main']['frequency']))
-        break
+        sleep(int(config['Main']['frequency']))
