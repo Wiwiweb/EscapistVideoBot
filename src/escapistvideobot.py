@@ -133,7 +133,7 @@ if __name__ == '__main__':
 
             retries = 5
         except praw.errors.RateLimitExceeded as e:
-            logging.exception("ERROR: RateLimitExceeded: " + str(e))
+            logging.error("ERROR: RateLimitExceeded: " + str(e))
             logging.error("Waiting another cycle.")
         except Exception as e:
             logging.exception("ERROR: Unknown error: " + str(e))
