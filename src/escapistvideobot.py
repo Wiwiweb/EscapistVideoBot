@@ -52,7 +52,7 @@ requests_log.setLevel(logging.ERROR)
 
 
 def is_new_submission(submission):
-    """Check the history file to see if the submission is new."""
+    """Check the history file and return True if the submission is new."""
     history = open(config['Files']['history'], 'r')
     next_line = history.readline().strip()
     for _ in range(int(config['Main']['post_limit_per_run'])):
@@ -66,7 +66,7 @@ def is_new_submission(submission):
 
 
 def get_mp4_link(url):
-    """Get the mp4 link from the escapist url, or None if it has no video."""
+    """Return the mp4 link from the escapist url or None if it has no video."""
     req = requests.get(url)
     soup = BeautifulSoup(req.text)
     soup_link = soup.find('link', rel='video_src')
@@ -86,19 +86,19 @@ def post_to_reddit(submission, mp4_link):
     """Post the link to the reddit thread. Return True if succeeded."""
     comment = "[Direct mp4 link]({})".format(mp4_link)
     if not debug:
-            try:
-                submission.add_comment(comment)
+        try:
+            submission.add_comment(comment)
+            return True
+        except praw.errors.RateLimitExceeded as e:
+            logging.error("ERROR: RateLimitExceeded: " + str(e))
+            logging.error("Skipping to next link.")
+            return False
+        except praw.errors.APIException as e:
+            if e.error_type == 'DELETED_LINK':
+                logging.error("ERROR: Submission was deleted.")
                 return True
-            except praw.errors.RateLimitExceeded as e:
-                logging.error("ERROR: RateLimitExceeded: " + str(e))
-                logging.error("Skipping to next link.")
-                return False
-            except praw.errors.APIException as e:
-                if e.error_type == 'DELETED_LINK':
-                    logging.error("ERROR: Submission was deleted.")
-                    return True
-                else:
-                    raise e
+            else:
+                raise e
     else:
         logging.debug("Comment that would have been posted: " + comment)
         return True
