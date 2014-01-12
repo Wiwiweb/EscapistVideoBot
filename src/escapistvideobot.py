@@ -69,9 +69,10 @@ def get_mp4_link(url):
     """Return the mp4 link from the escapist url or None if it has no video."""
     req = requests.get(url)
     soup = BeautifulSoup(req.text)
-    soup_link = soup.find('link', rel='video_src')
-    if soup_link:
-        soup_href = urllib.parse.unquote(soup_link.get('href'))
+    soup_object = soup.find('object', id='player_api')
+    if soup_object:
+        soup_param = soup_object.find('param', attrs={'name':'flashvars'})
+        soup_href = urllib.parse.unquote(soup_param.get('value'))
         js_url = re.search(r'config=(http://.+?\.js)', soup_href).group(1)
         req = requests.get(js_url)
         # Single quote is not valid JSON
@@ -84,7 +85,12 @@ def get_mp4_link(url):
 
 def post_to_reddit(submission, mp4_link):
     """Post the link to the reddit thread. Return True if succeeded."""
-    comment = "[Direct mp4 link]({})".format(mp4_link)
+    comment = "[Direct mp4 link]({})\n\n" \
+              "^^^If ^^^you ^^^get ^^^an ^^^error, ^^^please " \
+              "[^^^send ^^^a ^^^message]" \
+              "(http://www.reddit.com/message/compose/" \
+              "?to=Wiwiweb&subject=EscapistVideoBot%20error!)^^^." \
+              .format(mp4_link)
     if not debug:
         try:
             submission.add_comment(comment)
