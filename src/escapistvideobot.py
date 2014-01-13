@@ -85,11 +85,7 @@ def get_mp4_link(url):
 
 def post_to_reddit(submission, mp4_link):
     """Post the link to the reddit thread. Return True if succeeded."""
-    comment = "[Direct mp4 link]({})\n\n" \
-              "^^^If ^^^you ^^^get ^^^an ^^^error, ^^^please " \
-              "[^^^send ^^^a ^^^message]" \
-              "(http://www.reddit.com/message/compose/" \
-              "?to=Wiwiweb&subject=EscapistVideoBot%20error!)^^^." \
+    comment = "[Direct mp4 link]({})" \
               .format(mp4_link)
     if not debug:
         try:
