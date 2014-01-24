@@ -25,7 +25,7 @@ config = ConfigParser()
 config.read([CONFIG_FILE, CONFIG_FILE_PRIVATE])
 
 VERSION = "1.0"
-USER_AGENT = "SakuraiBot v" + VERSION + " by /u/Wiwiweb"
+USER_AGENT = "EscapistVideoBot v" + VERSION + " by /u/Wiwiweb"
 
 ESCAPIST_DOMAIN = "escapistmagazine.com"
 
