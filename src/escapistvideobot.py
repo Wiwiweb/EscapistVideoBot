@@ -74,10 +74,14 @@ def get_mp4_link(url):
         soup_param = soup_object.find('param', attrs={'name':'flashvars'})
         soup_href = urllib.parse.unquote(soup_param.get('value'))
         js_url = re.search(r'config=(http://.+?\.js)', soup_href).group(1)
-        req = requests.get(js_url)
+        logging.debug("js_url: " + js_url)
+        headers = {'User-Agent': 'runscope/0.1'}
+        req = requests.get(js_url, headers=headers)
+
         # Single quote is not valid JSON
         js_text = req.text.replace('\'', '"')
-        mp4_link = json.loads(js_text)['playlist'][1]['url']
+        js_object = json.loads(js_text)
+        mp4_link = js_object['playlist'][1]['url']
         return mp4_link
     else:
         return None
