@@ -6,12 +6,12 @@ Author: Wiwiweb
 
 """
 
+from collections import namedtuple
 from configparser import ConfigParser
 import json
 import logging
 import urllib.parse
 import re
-import sqlite3
 
 from bs4 import BeautifulSoup
 import praw
@@ -33,11 +33,13 @@ class PostCreator:
             logging.info("Found new submission: {} - {}".format(
                 submission.short_link, submission))
             logging.info("url: " + submission.url)
-            mp4_link = self.get_mp4_link(submission.url)
+            mp4_link, js_page = self.get_mp4_link(submission.url)
+            comment_url = None
 
             if mp4_link:
                 logging.info("mp4 link: " + str(mp4_link))
-                success = self.post_to_reddit(submission, mp4_link)
+                success, comment_url =\
+                    self.post_to_reddit(submission, mp4_link)
                 logging.info("Comment posted.")
             else:
                 logging.info("No video in this link")
@@ -46,57 +48,58 @@ class PostCreator:
             if success:
                 self.add_to_history(submission)
                 logging.info("Submission remembered.")
+                if comment_url:
+                    self.add_to_comment_list(comment_url, js_page, mp4_link)
+                    logging.info("Comment remembered.")
 
     def is_new_submission(self, submission):
         """Check the history file and return True if the submission is new."""
-        history = open(config['Files']['history'], 'r')
-        next_line = history.readline().strip()
-        for _ in range(int(config['Main']['post_limit_per_run'])):
-            while next_line:
-                if next_line == submission.id:
-                    history.close()
-                    return False
-                next_line = history.readline().strip()
-        history.close()
-        return True
+        sql_query = \
+            'SELECT submission_url FROM history WHERE submission_url=? LIMIT 1'
+        self.db_cursor.execute(sql_query, (submission.id,))
+        result = self.db_cursor.fetchone()
+        return result is None
 
     def get_mp4_link(self, url):
-        """Return the mp4 link from the escapist ur or None."""
+        """Return the mp4 link and js page from an escapist url or None."""
         req = requests.get(url)
         soup = BeautifulSoup(req.text)
         soup_object = soup.find('object', id='player_api')
         if soup_object:
             soup_param = soup_object.find('param', attrs={'name': 'flashvars'})
             soup_href = urllib.parse.unquote(soup_param.get('value'))
-            js_url = re.search(r'config=(http://.+?\.js)', soup_href).group(1)
-            logging.debug("js_url: " + js_url)
+            js_page = re.search(r'config=(http://.+?\.js)', soup_href).group(1)
+            logging.debug("js_url: " + js_page)
             headers = {'User-Agent': config['Main']['user_agent']}
-            req = requests.get(js_url, headers=headers)
+            req = requests.get(js_page, headers=headers)
 
             # Single quote is not valid JSON
             js_text = req.text.replace('\'', '"')
             js_object = json.loads(js_text)
             mp4_link = js_object['playlist'][1]['url']
-            return mp4_link
+            return mp4_link, js_page
         else:
-            return None
+            return None, None
 
     def post_to_reddit(self, submission, mp4_link):
-        """Post the link to the reddit thread. Return True if succeeded."""
+        """Post the link to the reddit thread.
+
+        Return True and the permalink to the comment if succeeded.
+        """
         comment = "[Direct mp4 link]({})" \
             .format(mp4_link)
         if not self.debug:
             try:
-                submission.add_comment(comment)
-                return True
+                comment = submission.add_comment(comment)
+                return True, comment.permalink
             except praw.errors.RateLimitExceeded as e:
                 logging.error("ERROR: RateLimitExceeded: " + str(e))
                 logging.error("Skipping to next link.")
-                return False
+                return False, None
             except praw.errors.APIException as e:
                 if e.error_type == 'DELETED_LINK':
                     logging.error("ERROR: Submission was deleted.")
-                    return True
+                    return True, None
                 else:
                     raise e
         else:
@@ -104,10 +107,12 @@ class PostCreator:
             return True
 
     def add_to_history(self, submission):
-        """Add the submission id to the top of the history file."""
-        history = open(config['Files']['history'], 'r+')
-        old = history.read()
-        history.seek(0)
+        """Add the submission id to the history database."""
         if not self.debug:
-            history.write(submission.id + '\n' + old)
-        history.close()
+            sql_query = 'INSERT INTO history VALUES (?)'
+            self.db_cursor.execute(sql_query, (submission.id,))
+
+    def add_to_comment_list(self, comment_url, js_page, mp4_link):
+        if not self.debug:
+            sql_query = "INSERT INTO comments VALUES (?,?,?,datetime('now'))"
+            self.db_cursor.execute(sql_query, (comment_url, js_page, mp4_link))

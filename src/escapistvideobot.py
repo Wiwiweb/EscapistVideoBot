@@ -28,6 +28,7 @@ USER_AGENT = "EscapistVideoBot v" + VERSION + " by /u/Wiwiweb"
 
 ESCAPIST_DOMAIN = "escapistmagazine.com"
 
+
 if len(sys.argv) > 1 and '--debug' in sys.argv:
     debug = True
 else:
@@ -56,6 +57,14 @@ if __name__ == '__main__':
     db_connection = sqlite3.connect(config['Files']['history'])
     db_cursor = db_connection.cursor()
 
+    sql_query = \
+        'CREATE TABLE IF NOT EXISTS history(submission_url TEXT)'
+    db_cursor.execute(sql_query)
+    sql_query = \
+        'CREATE TABLE IF NOT EXISTS comments' \
+        '(comment_url TEXT, js_page TEXT, mp4_link TEXT, date_created TEXT)'
+    db_cursor.execute(sql_query)
+
     post_creator = PostCreator(db_cursor, debug)
 
     retries = 5
@@ -71,6 +80,7 @@ if __name__ == '__main__':
                 for submission in latest_submissions:
                     logging.debug('{}: {}'.format(submission.id, submission))
                     post_creator.process_submission(submission)
+                    db_connection.commit()
 
                 retries = 5
             except Exception as e:
