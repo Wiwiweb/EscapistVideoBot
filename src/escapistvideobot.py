@@ -1,5 +1,5 @@
 """
-Fetches the mp4 link of Escapist videos and posts it on Reddit.
+Main bot loop.
 
 Created on 2013-12-09
 Author: Wiwiweb
@@ -7,17 +7,16 @@ Author: Wiwiweb
 """
 
 from configparser import ConfigParser
-import json
 import logging
 from logging.handlers import TimedRotatingFileHandler
-import re
 import sys
 from time import sleep
-import urllib.parse
 
-from bs4 import BeautifulSoup
 import praw
-import requests
+import sqlite3
+
+from post_creator import PostCreator
+from post_updater import PostUpdater
 
 CONFIG_FILE = "../cfg/config.ini"
 CONFIG_FILE_PRIVATE = "../cfg/config-private.ini"
@@ -51,78 +50,13 @@ requests_log = logging.getLogger('requests')
 requests_log.setLevel(logging.ERROR)
 
 
-def is_new_submission(submission):
-    """Check the history file and return True if the submission is new."""
-    history = open(config['Files']['history'], 'r')
-    next_line = history.readline().strip()
-    for _ in range(int(config['Main']['post_limit_per_run'])):
-        while next_line:
-            if next_line == submission.id:
-                history.close()
-                return False
-            next_line = history.readline().strip()
-    history.close()
-    return True
-
-
-def get_mp4_link(url):
-    """Return the mp4 link from the escapist url or None if it has no video."""
-    req = requests.get(url)
-    soup = BeautifulSoup(req.text)
-    soup_object = soup.find('object', id='player_api')
-    if soup_object:
-        soup_param = soup_object.find('param', attrs={'name':'flashvars'})
-        soup_href = urllib.parse.unquote(soup_param.get('value'))
-        js_url = re.search(r'config=(http://.+?\.js)', soup_href).group(1)
-        logging.debug("js_url: " + js_url)
-        headers = {'User-Agent': 'runscope/0.1'}
-        req = requests.get(js_url, headers=headers)
-
-        # Single quote is not valid JSON
-        js_text = req.text.replace('\'', '"')
-        js_object = json.loads(js_text)
-        mp4_link = js_object['playlist'][1]['url']
-        return mp4_link
-    else:
-        return None
-
-
-def post_to_reddit(submission, mp4_link):
-    """Post the link to the reddit thread. Return True if succeeded."""
-    comment = "[Direct mp4 link]({})" \
-              .format(mp4_link)
-    if not debug:
-        try:
-            submission.add_comment(comment)
-            return True
-        except praw.errors.RateLimitExceeded as e:
-            logging.error("ERROR: RateLimitExceeded: " + str(e))
-            logging.error("Skipping to next link.")
-            return False
-        except praw.errors.APIException as e:
-            if e.error_type == 'DELETED_LINK':
-                logging.error("ERROR: Submission was deleted.")
-                return True
-            else:
-                raise e
-    else:
-        logging.debug("Comment that would have been posted: " + comment)
-        return True
-
-
-def add_to_history(submission):
-    """Add the submission id to the top of the history file."""
-    history = open(config['Files']['history'], 'r+')
-    old = history.read()
-    history.seek(0)
-    if not debug:
-        history.write(submission.id + '\n' + old)
-    history.close()
-
-
 if __name__ == '__main__':
     r = praw.Reddit(user_agent=USER_AGENT)
     r.login(config['Reddit']['username'], config['Passwords']['reddit'])
+    db_connection = sqlite3.connect(config['Files']['history'])
+    db_cursor = db_connection.cursor()
+
+    post_creator = PostCreator(db_cursor, debug)
 
     retries = 5
 
@@ -136,24 +70,7 @@ if __name__ == '__main__':
 
                 for submission in latest_submissions:
                     logging.debug('{}: {}'.format(submission.id, submission))
-
-                    if is_new_submission(submission):
-                        logging.info("Found new submission: {} - {}".format(
-                            submission.short_link, submission))
-                        logging.info("url: " + submission.url)
-                        mp4_link = get_mp4_link(submission.url)
-
-                        if mp4_link:
-                            logging.info("mp4 link: " + str(mp4_link))
-                            success = post_to_reddit(submission, mp4_link)
-                            logging.info("Comment posted.")
-                        else:
-                            logging.info("No video in this link")
-                            success = True
-
-                        if success:
-                            add_to_history(submission)
-                            logging.info("Submission remembered.")
+                    post_creator.process_submission(submission)
 
                 retries = 5
             except Exception as e:
