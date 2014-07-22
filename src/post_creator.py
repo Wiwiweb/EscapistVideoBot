@@ -104,7 +104,7 @@ class PostCreator:
                     raise e
         else:
             logging.debug("Comment that would have been posted: " + comment)
-            return True
+            return True, None
 
     def add_to_history(self, submission):
         """Add the submission id to the history database."""
