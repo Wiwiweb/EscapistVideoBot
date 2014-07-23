@@ -114,5 +114,6 @@ class PostCreator:
 
     def add_to_comment_list(self, comment_url, js_page, mp4_link):
         if not self.debug:
-            sql_query = "INSERT INTO comments VALUES (?,?,?,datetime('now'))"
+            sql_query = "INSERT INTO comments VALUES " \
+                        "(?,?,?,datetime('now'),datetime('now'))"
             self.db_cursor.execute(sql_query, (comment_url, js_page, mp4_link))

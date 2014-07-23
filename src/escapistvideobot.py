@@ -62,7 +62,8 @@ if __name__ == '__main__':
     db_cursor.execute(sql_query)
     sql_query = \
         'CREATE TABLE IF NOT EXISTS comments' \
-        '(comment_url TEXT, js_page TEXT, mp4_link TEXT, date_created TEXT)'
+        '(comment_url TEXT, js_page TEXT, mp4_link TEXT,' \
+        ' date_created TEXT, date_modified TEXT)'
     db_cursor.execute(sql_query)
 
     post_creator = PostCreator(db_cursor, debug)
