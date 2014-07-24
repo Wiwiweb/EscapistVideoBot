@@ -10,7 +10,6 @@ from configparser import ConfigParser
 from datetime import datetime, timedelta
 import json
 import logging
-import sys
 
 import requests
 

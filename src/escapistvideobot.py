@@ -9,11 +9,11 @@ Author: Wiwiweb
 from configparser import ConfigParser
 import logging
 from logging.handlers import TimedRotatingFileHandler
+import sqlite3
 import sys
 from time import sleep
 
 import praw
-import sqlite3
 
 from post_creator import PostCreator
 from post_updater import PostUpdater
