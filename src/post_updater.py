@@ -26,7 +26,7 @@ class PostUpdater:
         self.debug = debug
 
     def check_all_posts(self):
-        """Check every previous comment to see if they need to be updated"""
+        """Check every previous comment to see if they need to be updated."""
         sql_query = 'SELECT * FROM comments'
         self.db_cursor.execute(sql_query)
         result = self.db_cursor.fetchall()
@@ -54,7 +54,7 @@ class PostUpdater:
                     logging.info("Did not update, link hasn't changed.")
 
     def fetch_new_link(self, js_page):
-        """Get the mp4 link from a js page"""
+        """Get the mp4 link from a js page."""
         headers = {'User-Agent': config['Main']['user_agent']}
         req = requests.get(js_page, headers=headers)
         # Single quote is not valid JSON
@@ -64,7 +64,7 @@ class PostUpdater:
         return mp4_link
 
     def update_post(self, post_url, mp4_link):
-        """Update the reddit comment with the new mp4 link"""
+        """Update the reddit comment with the new mp4 link."""
         body = config['Main']['comment_body'].format(mp4_link)
         if not self.debug:
             comment = self.reddit.get_submission(post_url).comments[0]
@@ -77,7 +77,7 @@ class PostUpdater:
             logging.debug("Comment that would have been edited: " + body)
 
     def expire_post(self, post_url):
-        """Strikeout the mp4 link from an old reddit comment"""
+        """Strikeout the mp4 link from an old reddit comment."""
         body = config['Main']['comment_expired_body']
         if not self.debug:
             comment = self.reddit.get_submission(post_url).comments[0]

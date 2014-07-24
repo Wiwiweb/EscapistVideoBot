@@ -91,7 +91,8 @@ if __name__ == '__main__':
                         limit=int(config['Main']['post_limit_per_run']))
 
                     for submission in latest_submissions:
-                        logging.debug('{}: {}'.format(submission.id, submission))
+                        logging.debug('{}: {}'.
+                                      format(submission.id, submission))
                         post_creator.process_submission(submission)
                         db_connection.commit()
 
