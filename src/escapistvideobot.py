@@ -29,10 +29,14 @@ USER_AGENT = "EscapistVideoBot v" + VERSION + " by /u/Wiwiweb"
 ESCAPIST_DOMAIN = "escapistmagazine.com"
 
 
-if len(sys.argv) > 1 and '--debug' in sys.argv:
+if '--debug' in sys.argv:
     debug = True
 else:
     debug = False
+if '--no-new-posts' in sys.argv:
+    no_new_posts = True
+else:
+    no_new_posts = False
 
 if debug:
     logging.basicConfig(stream=sys.stdout, level=logging.DEBUG,
@@ -52,6 +56,11 @@ requests_log.setLevel(logging.ERROR)
 
 
 if __name__ == '__main__':
+    logging.info("--- Starting EscapistVideoBot ---")
+    if debug:
+        logging.info("--- Debug mode ---")
+    if no_new_posts:
+        logging.info("--- New posts will not be created ---")
     reddit = praw.Reddit(user_agent=USER_AGENT)
     reddit.login(config['Reddit']['username'], config['Passwords']['reddit'])
     db_connection = sqlite3.connect(config['Files']['history'])
@@ -75,14 +84,16 @@ if __name__ == '__main__':
         while True:
             try:
                 logging.info("Starting new cycle.")
-                latest_submissions = reddit.get_domain_listing(
-                    ESCAPIST_DOMAIN, sort='new',
-                    limit=int(config['Main']['post_limit_per_run']))
 
-                for submission in latest_submissions:
-                    logging.debug('{}: {}'.format(submission.id, submission))
-                    post_creator.process_submission(submission)
-                    db_connection.commit()
+                if not no_new_posts:
+                    latest_submissions = reddit.get_domain_listing(
+                        ESCAPIST_DOMAIN, sort='new',
+                        limit=int(config['Main']['post_limit_per_run']))
+
+                    for submission in latest_submissions:
+                        logging.debug('{}: {}'.format(submission.id, submission))
+                        post_creator.process_submission(submission)
+                        db_connection.commit()
 
                 post_updater.check_all_posts()
 
