@@ -6,7 +6,6 @@ Author: Wiwiweb
 
 """
 
-from collections import namedtuple
 from configparser import ConfigParser
 import json
 import logging
@@ -86,11 +85,10 @@ class PostCreator:
 
         Return True and the permalink to the comment if succeeded.
         """
-        comment = "[Direct mp4 link]({})" \
-            .format(mp4_link)
+        body = config['Main']['comment_body'].format(mp4_link)
         if not self.debug:
             try:
-                comment = submission.add_comment(comment)
+                comment = submission.add_comment(body)
                 return True, comment.permalink
             except praw.errors.RateLimitExceeded as e:
                 logging.error("ERROR: RateLimitExceeded: " + str(e))
@@ -103,7 +101,7 @@ class PostCreator:
                 else:
                     raise e
         else:
-            logging.debug("Comment that would have been posted: " + comment)
+            logging.debug("Comment that would have been posted: " + body)
             return True, None
 
     def add_to_history(self, submission):

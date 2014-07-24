@@ -52,8 +52,8 @@ requests_log.setLevel(logging.ERROR)
 
 
 if __name__ == '__main__':
-    r = praw.Reddit(user_agent=USER_AGENT)
-    r.login(config['Reddit']['username'], config['Passwords']['reddit'])
+    reddit = praw.Reddit(user_agent=USER_AGENT)
+    reddit.login(config['Reddit']['username'], config['Passwords']['reddit'])
     db_connection = sqlite3.connect(config['Files']['history'])
     db_cursor = db_connection.cursor()
 
@@ -67,6 +67,7 @@ if __name__ == '__main__':
     db_cursor.execute(sql_query)
 
     post_creator = PostCreator(db_cursor, debug)
+    post_updater = PostUpdater(db_cursor, reddit, debug)
 
     retries = 5
 
@@ -74,7 +75,7 @@ if __name__ == '__main__':
         while True:
             try:
                 logging.info("Starting new cycle.")
-                latest_submissions = r.get_domain_listing(
+                latest_submissions = reddit.get_domain_listing(
                     ESCAPIST_DOMAIN, sort='new',
                     limit=int(config['Main']['post_limit_per_run']))
 
@@ -82,6 +83,8 @@ if __name__ == '__main__':
                     logging.debug('{}: {}'.format(submission.id, submission))
                     post_creator.process_submission(submission)
                     db_connection.commit()
+
+                post_updater.check_all_posts()
 
                 retries = 5
             except Exception as e:
