@@ -40,8 +40,8 @@ class PostUpdater:
             modified_time = datetime.strptime(comment[4], '%Y-%m-%d %H:%M:%S')
             logging.debug("Created at " + str(created_time))
             logging.debug("Modified at " + str(modified_time))
-            expire_hours = config['Main']['expire_hours']
-            update_minutes = config['Main']['update_minutes']
+            expire_hours = int(config['Main']['expire_hours'])
+            update_minutes = int(config['Main']['update_minutes'])
             if created_time + timedelta(hours=expire_hours) < time_now:
                 logging.info("Expiring post " + comment[0])
                 self.expire_post(comment[0])

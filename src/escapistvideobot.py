@@ -8,7 +8,7 @@ Author: Wiwiweb
 
 from configparser import ConfigParser
 import logging
-from logging.handlers import TimedRotatingFileHandler
+from logging.handlers import TimedRotatingFileHandler, RotatingFileHandler
 import sqlite3
 import sys
 from time import sleep
@@ -47,8 +47,14 @@ else:
                                              'midnight')
     timed_handler.setFormatter(logging.Formatter('%(asctime)s: %(message)s'))
     timed_handler.setLevel(logging.INFO)
+    debug_handler = RotatingFileHandler(config['Files']['debug_logfile'],
+                                        maxBytes=1024000,
+                                        backupCount=1)
+    debug_handler.setFormatter(logging.Formatter('%(asctime)s: %(message)s'))
+    debug_handler.setLevel(logging.DEBUG)
     root_logger.setLevel(logging.DEBUG)
     root_logger.addHandler(timed_handler)
+    root_logger.addHandler(debug_handler)
 
 # Silence python requests
 requests_log = logging.getLogger('urllib3')
