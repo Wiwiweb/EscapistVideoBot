@@ -85,6 +85,8 @@ if __name__ == '__main__':
             try:
                 logging.info("Starting new cycle.")
 
+                post_updater.check_all_posts()
+
                 if not no_new_posts:
                     latest_submissions = reddit.get_domain_listing(
                         ESCAPIST_DOMAIN, sort='new',
@@ -95,8 +97,6 @@ if __name__ == '__main__':
                                       format(submission.id, submission))
                         post_creator.process_submission(submission)
                         db_connection.commit()
-
-                post_updater.check_all_posts()
 
                 retries = 5
             except Exception as e:
