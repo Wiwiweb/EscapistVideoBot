@@ -29,8 +29,8 @@ class PostCreator:
 
     def process_submission(self, submission):
         if self.is_new_submission(submission):
-            logging.info("Found new submission: {} - {}".format(
-                submission.short_link, submission))
+            logging.info("Found new submission in /r/{}: {} - {}".format(
+                submission.subreddit, submission.short_link, submission))
             logging.info("url: " + submission.url)
             mp4_link, js_page = self.get_mp4_link(submission.url)
             comment_url = None
@@ -62,6 +62,7 @@ class PostCreator:
     def get_mp4_link(self, url):
         """Return the mp4 link and js page from an escapist url or None."""
         req = requests.get(url)
+        req.connection.close()
         soup = BeautifulSoup(req.text)
         soup_object = soup.find('object', id='player_api')
         if soup_object:
@@ -71,6 +72,7 @@ class PostCreator:
             logging.debug("js_url: " + js_page)
             headers = {'User-Agent': config['Main']['user_agent']}
             req = requests.get(js_page, headers=headers)
+            req.connection.close()
 
             # Single quote is not valid JSON
             js_text = req.text.replace('\'', '"')

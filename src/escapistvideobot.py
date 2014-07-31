@@ -23,7 +23,7 @@ CONFIG_FILE_PRIVATE = "../cfg/config-private.ini"
 config = ConfigParser()
 config.read([CONFIG_FILE, CONFIG_FILE_PRIVATE])
 
-VERSION = "1.0"
+VERSION = "2.0"
 USER_AGENT = "EscapistVideoBot v" + VERSION + " by /u/Wiwiweb"
 
 ESCAPIST_DOMAIN = "escapistmagazine.com"
@@ -51,8 +51,8 @@ else:
     root_logger.addHandler(timed_handler)
 
 # Silence python requests
-requests_log = logging.getLogger('requests')
-requests_log.setLevel(logging.ERROR)
+requests_log = logging.getLogger('urllib3')
+requests_log.setLevel(logging.WARN)
 
 
 if __name__ == '__main__':
