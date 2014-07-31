@@ -40,11 +40,13 @@ class PostUpdater:
             modified_time = datetime.strptime(comment[4], '%Y-%m-%d %H:%M:%S')
             logging.debug("Created at " + str(created_time))
             logging.debug("Modified at " + str(modified_time))
-            if created_time + timedelta(days=2) < time_now:
+            expire_hours = config['Main']['expire_hours']
+            update_minutes = config['Main']['update_minutes']
+            if created_time + timedelta(hours=expire_hours) < time_now:
                 logging.info("Expiring post " + comment[0])
                 self.expire_post(comment[0])
                 logging.info("Expired post.")
-            elif modified_time + timedelta(hours=1) < time_now:
+            elif modified_time + timedelta(minutes=update_minutes) < time_now:
                 logging.info("Updating post " + comment[0])
                 new_mp4_link = self.fetch_new_link(comment[1])
                 if new_mp4_link != comment[2]:
