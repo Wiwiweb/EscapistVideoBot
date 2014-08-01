@@ -59,6 +59,7 @@ class PostUpdater:
         """Get the mp4 link from a js page."""
         headers = {'User-Agent': config['Main']['user_agent']}
         req = requests.get(js_page, headers=headers)
+        req.connection.close()
         # Single quote is not valid JSON
         js_text = req.text.replace('\'', '"')
         js_object = json.loads(js_text)
@@ -67,7 +68,7 @@ class PostUpdater:
 
     def update_post(self, post_url, mp4_link):
         """Update the reddit comment with the new mp4 link."""
-        body = config['Main']['comment_body'].format(mp4_link)
+        body = config['Comment']['body'].format(mp4_link)
         if not self.debug:
             comment = self.reddit.get_submission(post_url).comments[0]
             comment.edit(body)
@@ -80,7 +81,7 @@ class PostUpdater:
 
     def expire_post(self, post_url):
         """Strikeout the mp4 link from an old reddit comment."""
-        body = config['Main']['comment_expired_body']
+        body = config['Comment']['expired_body']
         if not self.debug:
             comment = self.reddit.get_submission(post_url).comments[0]
             comment.edit(body)
