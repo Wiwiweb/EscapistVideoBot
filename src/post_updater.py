@@ -68,7 +68,8 @@ class PostUpdater:
 
     def update_post(self, post_url, mp4_link):
         """Update the reddit comment with the new mp4 link."""
-        body = config['Comment']['body'].format(mp4_link)
+        body = config['Comment']['body']\
+            .format(mp4_link, config['Main']['dereferrer'])
         if not self.debug:
             comment = self.reddit.get_submission(post_url).comments[0]
             comment.edit(body)
@@ -81,7 +82,8 @@ class PostUpdater:
 
     def expire_post(self, post_url):
         """Strikeout the mp4 link from an old reddit comment."""
-        body = config['Comment']['expired_body']
+        body = config['Comment']['expired_body'] \
+            .format(config['Main']['expire_hours'])
         if not self.debug:
             comment = self.reddit.get_submission(post_url).comments[0]
             comment.edit(body)
@@ -89,4 +91,4 @@ class PostUpdater:
                         "WHERE comment_url=?"
             self.db_cursor.execute(sql_query, (post_url,))
         else:
-            logging.debug("Comment that would have been edited: " + body)
+            logging.debug("Comment that would have been expired: " + body)

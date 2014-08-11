@@ -87,7 +87,8 @@ class PostCreator:
 
         Return True and the permalink to the comment if succeeded.
         """
-        body = config['Comment']['body'].format(mp4_link)
+        body = config['Comment']['body']\
+            .format(mp4_link, config['Main']['dereferrer'])
         if not self.debug:
             try:
                 comment = submission.add_comment(body)
