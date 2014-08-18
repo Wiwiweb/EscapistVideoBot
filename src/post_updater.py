@@ -32,25 +32,37 @@ class PostUpdater:
         result = self.db_cursor.fetchall()
         time_now = datetime.utcnow()
         logging.debug("The time is " + str(time_now))
-        for comment in result:
+        for comment_table in result:
             # comment table structure:
             # comment_url, js_page, mp4_link, date_created, date_modified
-            logging.debug(comment[0])
-            created_time = datetime.strptime(comment[3], '%Y-%m-%d %H:%M:%S')
-            modified_time = datetime.strptime(comment[4], '%Y-%m-%d %H:%M:%S')
+            logging.debug(comment_table[0])
+
+            submission = self.reddit.get_submission(comment_table[0])
+            comment = submission.comments[0]
+            logging.debug("Score: " + str(comment.score))
+
+            if comment.score < 0:
+                logging.info("Deleting post " + comment_table[0])
+                self.delete_post(comment)
+                logging.info("Deleted post.")
+                return
+
+            created_time = datetime.strptime(comment_table[3], '%Y-%m-%d %H:%M:%S')
+            modified_time = datetime.strptime(comment_table[4], '%Y-%m-%d %H:%M:%S')
             logging.debug("Created at " + str(created_time))
             logging.debug("Modified at " + str(modified_time))
             expire_hours = int(config['Main']['expire_hours'])
             update_minutes = int(config['Main']['update_minutes'])
+
             if created_time + timedelta(hours=expire_hours) < time_now:
-                logging.info("Expiring post " + comment[0])
-                self.expire_post(comment[0])
+                logging.info("Expiring post " + comment_table[0])
+                self.expire_post(comment)
                 logging.info("Expired post.")
             elif modified_time + timedelta(minutes=update_minutes) < time_now:
-                logging.info("Updating post " + comment[0])
-                new_mp4_link = self.fetch_new_link(comment[1])
-                if new_mp4_link != comment[2]:
-                    self.update_post(comment[0], new_mp4_link)
+                logging.info("Updating post " + comment_table[0])
+                new_mp4_link = self.fetch_new_link(comment_table[1])
+                if new_mp4_link != comment_table[2]:
+                    self.update_post(comment, new_mp4_link)
                     logging.info("Updated post.")
                 else:
                     logging.info("Did not update, link hasn't changed.")
@@ -66,29 +78,37 @@ class PostUpdater:
         mp4_link = js_object['playlist'][1]['url']
         return mp4_link
 
-    def update_post(self, post_url, mp4_link):
+    def update_post(self, comment, mp4_link):
         """Update the reddit comment with the new mp4 link."""
         body = config['Comment']['body']\
             .format(mp4_link, config['Main']['dereferrer'])
         if not self.debug:
-            comment = self.reddit.get_submission(post_url).comments[0]
             comment.edit(body)
             sql_query = "UPDATE comments " \
                         "SET mp4_link=?, date_modified=datetime('now') " \
                         "WHERE comment_url=?"
-            self.db_cursor.execute(sql_query, (mp4_link, post_url))
+            self.db_cursor.execute(sql_query, (mp4_link, comment.permalink))
         else:
             logging.debug("Comment that would have been edited: " + body)
 
-    def expire_post(self, post_url):
+    def expire_post(self, comment):
         """Strikeout the mp4 link from an old reddit comment."""
         body = config['Comment']['expired_body'] \
             .format(config['Main']['expire_hours'])
         if not self.debug:
-            comment = self.reddit.get_submission(post_url).comments[0]
             comment.edit(body)
             sql_query = "DELETE FROM comments " \
                         "WHERE comment_url=?"
-            self.db_cursor.execute(sql_query, (post_url,))
+            self.db_cursor.execute(sql_query, (comment.permalink,))
         else:
             logging.debug("Comment that would have been expired: " + body)
+
+    def delete_post(self, comment):
+        """Delete the comment due to negative score."""
+        if not self.debug:
+            comment.delete()
+            sql_query = "DELETE FROM comments " \
+                        "WHERE comment_url=?"
+            self.db_cursor.execute(sql_query, (comment.permalink,))
+        else:
+            logging.debug("This comment would have been deleted.")
