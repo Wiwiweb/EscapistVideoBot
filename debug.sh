@@ -15,4 +15,4 @@ git pull
 # Start
 echo "Starting"
 cd src
-python escapistvideobot.py --debug
+python3 escapistvideobot.py --debug
