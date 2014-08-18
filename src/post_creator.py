@@ -104,7 +104,13 @@ class PostCreator:
                 return False, None
             except praw.errors.APIException as e:
                 if e.error_type == 'DELETED_LINK':
-                    logging.error("ERROR: Submission was deleted.")
+                    logging.warning("WARNING: Submission was deleted.")
+                    return True, None
+                else:
+                    raise e
+            except requests.HTTPError as e:
+                if 403 in str(e):
+                    logging.warning("WARNING: Banned from the subreddit.")
                     return True, None
                 else:
                     raise e
