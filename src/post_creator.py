@@ -32,16 +32,21 @@ class PostCreator:
             logging.info("Found new submission in /r/{}: {} - {}".format(
                 submission.subreddit, submission.short_link, submission))
             logging.info("url: " + submission.url)
-            mp4_link, js_page = self.get_mp4_link(submission.url)
             comment_url = None
-
-            if mp4_link:
-                logging.info("mp4 link: " + str(mp4_link))
-                success, comment_url =\
-                    self.post_to_reddit(submission, mp4_link)
-                logging.info("Comment posted.")
+            js_page = None
+            mp4_link = None
+            if '/videos/' in submission.url:
+                mp4_link, js_page = self.get_mp4_link(submission.url)
+                if mp4_link:
+                    logging.info("mp4 link: " + str(mp4_link))
+                    success, comment_url =\
+                        self.post_to_reddit(submission, mp4_link)
+                    logging.info("Comment posted.")
+                else:
+                    logging.info("No video in this link")
+                    success = True
             else:
-                logging.info("No video in this link")
+                logging.info("Does not contain '/video/' in URL")
                 success = True
 
             if success:
