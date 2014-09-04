@@ -91,9 +91,11 @@ if __name__ == '__main__':
             try:
                 logging.info("Starting new cycle.")
 
+                logging.debug("Updating posts.")
                 post_updater.check_all_posts()
 
                 if not no_new_posts:
+                    logging.debug("Creating posts.")
                     latest_submissions = reddit.get_domain_listing(
                         ESCAPIST_DOMAIN, sort='new',
                         limit=int(config['Main']['post_limit_per_run']))

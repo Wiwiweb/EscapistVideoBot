@@ -109,7 +109,7 @@ class PostCreator:
                 else:
                     raise e
             except requests.HTTPError as e:
-                if 403 in str(e):
+                if "403" in str(e):
                     logging.warning("WARNING: Banned from the subreddit.")
                     return True, None
                 else:
